@@ -12,10 +12,11 @@
       "models": {
         "itmo-agent": {
           "name": "ITMO local 64k",
-          "limit": {
-            "context": 65536,
-            "output": 4096
-          }
+          "limit": { "context": 65536, "output": 4096 }
+        },
+        "itmo-chat": {
+          "name": "ITMO chat 4k",
+          "limit": { "context": 4096, "output": 1024 }
         }
       }
     }
@@ -24,7 +25,7 @@
     "local-guide": {
       "description": "Read-only local repository assistant",
       "mode": "primary",
-      "prompt": "{file:./repo-system.txt}",
+      "prompt": "{file:./demo/repo-system.txt}",
       "steps": 8,
       "permission": {
         "*": "deny",
@@ -36,7 +37,7 @@
     "builder": {
       "description": "Build-mode writer: prepares gold answers and writes results/report",
       "mode": "primary",
-      "prompt": "{file:./repo-system.txt}",
+      "prompt": "{file:./demo/repo-system.txt}",
       "steps": 12,
       "permission": {
         "*": "deny",

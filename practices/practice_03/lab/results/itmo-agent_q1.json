@@ -1,0 +1,37 @@
+{
+  "question": "Как запустить тесты? Укажи файл-источник.",
+  "request": {
+    "model": "itmo-agent",
+    "messages": [
+      {
+        "role": "user",
+        "content": "# Notify Mini\nУчебный сервис подписки. Подписчики хранятся в памяти процесса.\nВ service.py функция subscribe добавляет непустое имя в множество.\nПовторное добавление имени не создаёт дубликат.\n\nПроверка: make test.\nЗависимости: стандартная библиотека Python 3.10+.\n\n\nКак запустить тесты? Укажи файл-источник."
+      }
+    ],
+    "stream": false,
+    "think": false,
+    "options": {
+      "temperature": 0.2,
+      "seed": 42,
+      "num_ctx": 4096,
+      "num_predict": 512
+    }
+  },
+  "response": {
+    "model": "itmo-agent",
+    "created_at": "2026-10-07T19:26:46.76716Z",
+    "message": {
+      "role": "assistant",
+      "content": "Для запуска тестов в Python, вы можете использовать стандартный модуль `unittest`. Предполагается, что у вас есть файл `test_service.py`, который содержит тесты для модуля `service.py`. Вот пример того, как вы можете запустить эти тесты:\n\n1. Убедитесь, что у вас есть файл `test_service.py`, который содержит тесты для модуля `service.py`. Например:\n\n```python\n# test_service.py\nimport unittest\nfrom service import subscribe\n\nclass TestSubscribe(unittest.TestCase):\n    def test_subscribe(self):\n        # Инициализируем множество для хранения подписчиков\n        subscribers = set()\n\n        # Проверяем, что добавление нового имени работает корректно\n        subscribe(subscribers, \"Alice\")\n        self.assertIn(\"Alice\", subscribers)\n\n        # Проверяем, что повторное добавление имени не создаёт дубликат\n        subscribe(subscribers, \"Alice\")\n        self.assertIn(\"Alice\", subscribers)\n        self.assertEqual(len(subscribers), 1)\n\nif __name__ == '__main__':\n    unittest.main()\n```\n\n2. Запустите тесты с помощью команды:\n\n```sh\npython -m unittest test_service.py\n```\n\nЭта команда выполнит все тесты, определенные в файле `test_service.py`. Если все тесты проходят успешно, вы увидите сообщение, что все тесты пройдены. Если есть какие-либо ошибки или утверждения, которые не выполняются, вы увидите соответствующие сообщения об ошибках."
+    },
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 17258494084,
+    "load_duration": 5486792,
+    "prompt_eval_count": 131,
+    "prompt_eval_cached_count": 3,
+    "prompt_eval_duration": 593779000,
+    "eval_count": 337,
+    "eval_duration": 16655505000
+  }
+}
