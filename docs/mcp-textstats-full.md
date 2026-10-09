@@ -13,6 +13,7 @@
   - Ответ: либо `{"id":<same>, "result": ...}`, либо `{"id":<same>, "error": {"code": <int>, "message": <string>}}`.
 
 Как запускать
+- Важно: все команды ниже выполнять из корня репозитория (`ITMOv2`), чтобы путь `scripts/mcp_textstats.py` был корректным.
 - Список доступных инструментов:
   ```bash
   echo '{"id":1,"method":"tools/list"}' | python3 scripts/mcp_textstats.py
