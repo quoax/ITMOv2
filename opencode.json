@@ -19,4 +19,12 @@
       }
     }
   }
+  ,
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://api.context7.dev",
+      "enabled": true
+    }
+  }
 }

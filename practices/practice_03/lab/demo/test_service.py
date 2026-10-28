@@ -1,5 +1,5 @@
 import unittest
-from service import subscribe, subscribers
+from service import subscribe, subscribers, unsubscribe, is_subscribed
 
 
 class SubscribeTest(unittest.TestCase):
@@ -19,7 +19,19 @@ class SubscribeTest(unittest.TestCase):
         subscribe("Ann")
         self.assertEqual(len(subscribers), 1)
 
+    def test_unsubscribe_existing(self):
+        subscribe("Ann")
+        self.assertTrue(is_subscribed("Ann"))
+        self.assertEqual(unsubscribe("Ann"), {"unsubscribed": True})
+        self.assertFalse(is_subscribed("Ann"))
+
+    def test_unsubscribe_nonexistent(self):
+        self.assertEqual(unsubscribe("Bob"), {"unsubscribed": False})
+
+    def test_normalization(self):
+        subscribe(" Ann ")
+        self.assertTrue(is_subscribed("Ann"))
+
 
 if __name__ == "__main__":
     unittest.main()
-
