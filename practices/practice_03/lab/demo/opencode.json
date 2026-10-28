@@ -32,7 +32,19 @@
         "glob": "allow",
         "grep": "allow"
       }
+    },
+    "builder": {
+      "description": "Build-mode writer: prepares gold answers and writes results/report",
+      "mode": "primary",
+      "prompt": "{file:./repo-system.txt}",
+      "steps": 12,
+      "permission": {
+        "*": "deny",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "write": "allow"
+      }
     }
   }
 }
-
