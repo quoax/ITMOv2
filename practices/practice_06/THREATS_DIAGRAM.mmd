@@ -1,0 +1,70 @@
+flowchart TD
+  %% Архитектура и границы доверия
+  subgraph Client ["Клиентская зона (невостребующая доверия)"]
+    C_User[Пользователь/Браузер]
+    C_Attacker[Злоумышленник]
+    C_LLM[Внешний LLM-планировщик\n(opencode агент, отдельный процесс)]
+  end
+
+  subgraph Server ["Локальный HTTP-сервер 127.0.0.1 (service.py)"]
+    S_Handler[BaseHTTPRequestHandler\nhandle_request]
+    S_Dispatch[Shop.dispatch]
+    E_login["POST /login"]
+    E_profile["GET /profile?id"]
+    E_search["GET /search?q"]
+    E_orders["GET/POST /orders"]
+    E_export["GET /admin/export"]
+    E_files["GET /files?user&path"]
+    E_reviews_post["POST /reviews"]
+    E_reviews_view["GET /reviews/view (HTML)"]
+    E_logs["GET /debug/logs"]
+    E_ctx["GET /assistant/context?order_id&question"]
+    E_exec["POST /assistant/execute {decision: {tool, arguments}}"]
+    S_Sessions[In‑memory sessions\nX-Token -> {id, role}]
+    S_Auth["Наивная авторизация\n(частично/местами отсутствует)"]
+  end
+
+  subgraph Data ["Хранилища и файловый стенд"]
+    D_DB[(SQLite :memory:\nprofiles, orders)]
+    F_Sandbox[Sandbox FS root\n(tempdir)]
+    F_Alice[files/alice/receipt.txt]
+    F_Bob[files/bob/receipt.txt]
+    F_Private[private/operator-note.txt]
+  end
+
+  %% Потоки данных
+  C_User -->|username/password| E_login --> S_Sessions
+  C_User -->|X-Token (где есть)| S_Auth
+  C_Attacker --> S_Handler --> S_Dispatch
+
+  %% Эндпоинты -> данные
+  E_profile -->|SQL (строковая интерполяция)| D_DB
+  E_search -->|SQL LIKE (строковая интерполяция)| D_DB
+  E_orders -->|INSERT (parametrized), SELECT (без auth)| D_DB
+  E_export -->|SELECT profiles по заголовку X-Role| D_DB
+  E_files -->|sandbox.read(name)| F_Sandbox
+  E_reviews_post --> S_Dispatch
+  S_Dispatch --> E_reviews_view
+  E_logs --> S_Dispatch
+
+  %% AI контур
+  E_ctx -->|prompt: orders+reviews+question| C_LLM
+  C_LLM -->|JSON decision: tool+arguments| E_exec
+  E_exec -->|read_file| F_Sandbox
+  E_exec -->|export_profiles| D_DB
+  E_exec -->|delete_tree| F_Sandbox
+
+  %% Точки атак (подписи на рёбрах)
+  E_profile -. "SQLi через id" .-> D_DB
+  E_search -. "SQLi через q" .-> D_DB
+  E_export -. "Подмена роли через X-Role" .-> D_DB
+  E_files -. "LFI/Path Traversal внутри стенда\nчтение private/*" .-> F_Private
+  E_reviews_view -. "Reflected XSS (без экранирования)" .-> C_User
+  E_logs -. "Утечка токенов/тел" .-> C_Attacker
+  E_orders -. "IDOR/Раскрытие всех заказов\nМассовое присваивание цены" .-> D_DB
+  E_ctx -. "Prompt Injection из отзывов" .-> C_LLM
+  E_exec -. "Отсутствие авторизации инструментов\nR/W файлов, экспорт профилей, удаление дерева" .-> F_Sandbox
+
+  %% Границы доверия (логические)
+  classDef boundary fill:#fff,stroke:#999,stroke-dasharray: 5 5,color:#333;
+  class Client,Server,Data boundary
