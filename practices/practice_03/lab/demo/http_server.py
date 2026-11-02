@@ -1,7 +1,8 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
-from service import subscribe, unsubscribe, list_subscribers
+from urllib.parse import urlparse, parse_qs
+from service import subscribe, unsubscribe, list_subscribers, list_records_raw
 
 WEB_DIR = Path(__file__).parent / "web"
 
@@ -10,7 +11,7 @@ class Handler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, obj):
         data = json.dumps(obj, ensure_ascii=False).encode()
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
@@ -26,10 +27,83 @@ class Handler(BaseHTTPRequestHandler):
             return {}
 
     def do_GET(self):
-        if self.path == "/api/subscribers":
+        # Parse path and query
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/subscribers":
+            # legacy endpoint for compatibility
             return self._send_json(200, {"subscribers": list_subscribers()})
+        if parsed.path == "/api/v1/subscribers" or parsed.path == "/api/v1/subscribers/":
+            try:
+                # REST list with pagination and sort
+                qs = parse_qs(parsed.query)
+                # test hook to simulate internal error
+                if qs.get("__test_internal", ["0"])[0] == "1":
+                    raise RuntimeError("simulated internal error")
+
+                def get_int(name, default):
+                    try:
+                        if name not in qs:
+                            return default
+                        return int(qs.get(name, [default])[0])
+                    except Exception:
+                        # Force invalid to 400 later by returning sentinel
+                        return None
+                def get_str(name, default):
+                    val = qs.get(name, [default])[0]
+                    return val
+
+                offset = get_int("offset", 0)
+                limit = get_int("limit", 20)
+                sort = get_str("sort", "asc")
+
+                details = {}
+                if offset is None or offset < 0:
+                    details["offset"] = "must be >= 0"
+                if limit is None or limit < 1 or limit > 100:
+                    details["limit"] = "must be between 1 and 100"
+                if sort not in ("asc", "desc"):
+                    details["sort"] = "must be one of asc, desc"
+                if details:
+                    return self._send_json(400, {
+                        "error": {
+                            "code": "VALIDATION_ERROR",
+                            "message": "Invalid query parameters",
+                            "details": details,
+                        }
+                    })
+
+                # Build list and apply sort, total, slice
+                records = list_records_raw()
+                total = len(records)
+                # sort by created_ts asc/desc, tie-break by id asc
+                reverse = (sort == "desc")
+                records.sort(key=lambda r: (r.get("created_ts", 0.0), r.get("id", "")))
+                if reverse:
+                    # reverse while preserving tie-breaker semantics
+                    records.reverse()
+                page = records[offset: offset + limit]
+                # map to public fields
+                items = [{"id": r["id"], "email": r["email"], "created_at": r["created_at"]} for r in page]
+                return self._send_json(200, {"items": items, "total": total})
+            except Exception:
+                return self._send_json(500, {
+                    "error": {
+                        "code": "INTERNAL_ERROR",
+                        "message": "unexpected server error",
+                        "details": {},
+                    }
+                })
+        # API 404 envelope for unknown /api/v1/* paths
+        if parsed.path.startswith("/api/v1/"):
+            return self._send_json(404, {
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "not found",
+                    "details": {},
+                }
+            })
         # static files
-        target = "index.html" if self.path == "/" else self.path.lstrip("/")
+        target = "index.html" if parsed.path == "/" else parsed.path.lstrip("/")
         path = WEB_DIR / target
         try:
             # Basic containment check to avoid path traversal
@@ -83,6 +157,10 @@ def serve(host: str = "127.0.0.1", port: int = 8000):
         pass
     finally:
         server.server_close()
+
+def create_server(host: str = "127.0.0.1", port: int = 8000):
+    """Create a server instance for test usage without blocking."""
+    return ThreadingHTTPServer((host, port), Handler)
 
 
 if __name__ == "__main__":

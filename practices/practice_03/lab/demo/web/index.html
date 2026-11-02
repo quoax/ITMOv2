@@ -15,7 +15,25 @@
         <span id="status"></span>
       </form>
       <input id="filter" placeholder="Фильтр" />
+      <section id="controls">
+        <label>Сортировка:
+          <select id="sort">
+            <option value="asc">По возрастанию</option>
+            <option value="desc">По убыванию</option>
+          </select>
+        </label>
+        <span id="hints" class="hint"></span>
+      </section>
+      <div id="summary"></div>
       <ul id="list"></ul>
+      <nav id="pager">
+        <button data-act="first">|&lt;</button>
+        <button data-act="prev">&lt;</button>
+        <span id="pages"></span>
+        <button data-act="next">&gt;</button>
+        <button data-act="last">&gt;|</button>
+      </nav>
+      <div id="error" role="alert"></div>
     </main>
     <script src="/script.js"></script>
   </body>
