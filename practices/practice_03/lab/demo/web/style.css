@@ -6,3 +6,10 @@ ul { list-style: none; padding: 0; }
 li { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
 button { padding: 0.4rem 0.8rem; }
 #status { font-size: 0.9rem; color: #666; }
+nav#pager { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
+#pages button { padding: 0.2rem 0.5rem; }
+#summary { margin: 0.5rem 0; color: #333; }
+#error { margin-top: 0.5rem; color: #b00020; }
+.loading { opacity: 0.6; pointer-events: none; }
+.invalid { outline: 2px solid #b00020; }
+.hint { font-size: 0.85rem; color: #555; }
